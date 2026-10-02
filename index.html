@@ -82,6 +82,7 @@ const fmt=m=>pad(Math.floor(m/60))+':'+pad(m%60);
 const iso=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
 const dt=s=>new Date(s+'T12:00:00');
 const longD=s=>dt(s).toLocaleDateString('fr-CH',{weekday:'long',day:'numeric',month:'long'});
+const dateD=s=>dt(s).toLocaleDateString('fr-CH',{day:'numeric',month:'long'});
 const shortD=s=>dt(s).toLocaleDateString('fr-CH',{day:'numeric',month:'short'});
 const monthD=s=>dt(s).toLocaleDateString('fr-CH',{month:'long',year:'numeric'});
 function sundays(){const d=new Date();d.setHours(12,0,0,0);d.setDate(d.getDate()+(7-d.getDay())%7);const end=new Date(d);end.setMonth(end.getMonth()+6);const o=[];while(d<=end){o.push(iso(d));d.setDate(d.getDate()+7)}return o}
@@ -137,8 +138,9 @@ function viewOverview(){
   const counts=slots.map(t=>MEMBERS.filter(m=>pres(m,t)).length);
   const full=MEMBERS.filter(m=>!api.get(m,d).length).length;
   const nAbs=MEMBERS.length-full;
+  const optionLabel=v=>{const absent=MEMBERS.filter(m=>api.get(m,v).length);return `${dateD(v)} - ${absent.length} ${absent.length===1?'absence':'absences'}${absent.length?' : '+absent.join(', '):''}`};
   let h=`<div class="row"><button class="btn" data-a="prev"${i<1?' disabled':''} aria-label="Dimanche précédent">‹</button>
-  <select id="ov" style="flex:1">${opts(DAYS,d,v=>longD(v)+' – '+MEMBERS.filter(m=>api.get(m,v).length).length+' avec absence')}</select>
+  <select id="ov" style="flex:1">${opts(DAYS,d,optionLabel)}</select>
   <button class="btn" data-a="next"${i>=DAYS.length-1?' disabled':''} aria-label="Dimanche suivant">›</button></div>
   <p class="sum">${full} sur ${MEMBERS.length} présents toute la journée. ${nAbs?nAbs+' avec une absence.':'Personne n’est absent.'}</p>
   <div class="gridwrap"><table><thead><tr><th>Membre</th>${slots.map(t=>`<th class="h">${t%60?'':Math.floor(t/60)+'h'}</th>`).join('')}</tr>
