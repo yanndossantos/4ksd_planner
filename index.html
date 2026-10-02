@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Présences danse</title>
+<style>
+:root{--bg:#f3f3f5;--card:#fff;--tx:#1c1b22;--mut:#6e6e78;--ac:#d6246e;--ok:#bfeadb;--okx:#0f7a5a;--ko:#f7c6d8;--bd:#dcdce2;--gr:#0f7a5a;--grt:#fff;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121214;--card:#1c1c20;--tx:#f0f0f2;--mut:#9a9aa3;--ac:#ff5c9a;--ok:#14493a;--okx:#6fe0bb;--ko:#5c2340;--bd:#303036;--gr:#6fe0bb;--grt:#0b2a20}}
+:root[data-theme="dark"]{--bg:#121214;--card:#1c1c20;--tx:#f0f0f2;--mut:#9a9aa3;--ac:#ff5c9a;--ok:#14493a;--okx:#6fe0bb;--ko:#5c2340;--bd:#303036;--gr:#6fe0bb;--grt:#0b2a20}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.45 "Avenir Next","Segoe UI",system-ui,sans-serif}
+main{max-width:760px;margin:0 auto;padding:16px}
+h1{font-size:1.5rem;margin:8px 0 2px;letter-spacing:-.01em}
+.demo{color:var(--mut);font-size:.85rem;margin:0 0 14px}
+nav{display:flex;gap:6px;margin-bottom:14px;position:sticky;top:env(safe-area-inset-top,0px);background:var(--bg);padding:6px 0;z-index:2}
+nav button{flex:1;padding:10px;border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:10px;font:inherit;font-weight:600;cursor:pointer}
+nav button.on{background:var(--tx);color:var(--bg);border-color:var(--tx)}
+button:focus-visible,select:focus-visible{outline:3px solid var(--ac);outline-offset:2px}
+select,.btn{font:inherit;padding:9px 10px;border-radius:10px;border:1px solid var(--bd);background:var(--card);color:var(--tx)}
+.btn{cursor:pointer;font-weight:600}
+.btn.p{background:var(--ac);color:#fff;border-color:var(--ac)}
+.btn.k{background:var(--tx);color:var(--bg);border-color:var(--tx)}
+.btn.g{background:var(--gr);color:var(--grt);border-color:var(--gr)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.who{display:flex;gap:10px;align-items:center;margin-bottom:12px}
+h2{font-size:.95rem;color:var(--mut);margin:18px 0 6px;font-weight:600}
+.day{background:var(--card);border:1px solid var(--bd);border-radius:12px;margin-bottom:8px;padding:10px 12px}
+.day.abs{border-left:5px solid var(--ac)}
+.top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.top b{font-weight:650}
+.st{font-size:.9rem;color:var(--okx)}
+.abs .st{color:var(--ac)}
+.panel{margin-top:10px;padding-top:10px;border-top:1px dashed var(--bd)}
+.chip{display:inline-flex;gap:6px;align-items:center;background:var(--ko);border-radius:99px;padding:4px 6px 4px 12px;font-size:.9rem}
+.chip button{border:0;background:transparent;color:inherit;font-size:1rem;cursor:pointer;padding:0 6px}
+.msg{color:var(--ac);font-size:.9rem;margin:6px 0 0}
+.busy{opacity:.55;pointer-events:none}
+.gridwrap{overflow-x:auto;background:var(--card);border:1px solid var(--bd);border-radius:12px;margin-top:12px}
+table{border-collapse:collapse;width:100%;min-width:620px;font-size:.85rem}
+th,td{padding:0;text-align:center;border-bottom:1px solid var(--bd)}
+th:first-child,td:first-child{position:sticky;left:0;background:var(--card);text-align:left;padding:7px 10px;min-width:96px;z-index:1;font-weight:600}
+th.h{font-weight:500;color:var(--mut);padding:6px 2px}
+td.c{height:30px;border-left:1px solid var(--card)}
+td.y{background:var(--ok)}
+td.n{background:repeating-linear-gradient(135deg,var(--ko),var(--ko) 5px,transparent 5px,transparent 9px)}
+tr.cnt td{font-weight:700;padding:6px 2px}
+tr.cnt td:first-child{color:var(--mut);font-weight:600}
+.sum{margin:10px 2px;color:var(--mut);font-size:.9rem}
+.log{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:4px 12px}
+.log div{padding:9px 0;border-bottom:1px solid var(--bd);font-size:.92rem}
+.log div:last-child{border:0}
+.log small{color:var(--mut);display:block}
+.empty{color:var(--mut);padding:14px 0}
+</style>
+</head>
+<body>
+<main>
+<h1>Présences danse</h1>
+<p class="demo" id="upd">Chargement…</p>
+<div id="app"></div>
+</main>
+<script>
+// ---- Connexion Supabase (clé publique : sans danger, l'accès est limité par les règles de la base) ----
+const SB='https://lfelfkkhcngebdejecei.supabase.co/rest/v1';
+const KEY='sb_publishable_GgbSCIi_BzKgndDPRlgveA_iewj9Ny2';
+const START=540, END=900, STEP=30; // 9h00 à 15h00, en minutes
+let MEMBERS=[];
+
+async function sb(path,opt={}){
+  const r=await fetch(SB+path,{...opt,headers:{apikey:KEY,'Content-Type':'application/json'}});
+  const t=await r.text();let j=null;try{j=t?JSON.parse(t):null}catch(e){}
+  if(!r.ok)throw new Error((j&&j.message)||'Erreur '+r.status);
+  return j;
+}
+const errTxt=e=>/fetch|network/i.test(e.message)?'Connexion impossible. Vérifie ta connexion internet.':e.message;
+
+// ---- Outils ----
+const pad=n=>String(n).padStart(2,'0');
+const fmt=m=>pad(Math.floor(m/60))+':'+pad(m%60);
+const iso=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const dt=s=>new Date(s+'T12:00:00');
+const longD=s=>dt(s).toLocaleDateString('fr-CH',{weekday:'long',day:'numeric',month:'long'});
+const shortD=s=>dt(s).toLocaleDateString('fr-CH',{day:'numeric',month:'short'});
+const monthD=s=>dt(s).toLocaleDateString('fr-CH',{month:'long',year:'numeric'});
+function sundays(){const d=new Date();d.setHours(12,0,0,0);d.setDate(d.getDate()+(7-d.getDay())%7);const end=new Date(d);end.setMonth(end.getMonth()+6);const o=[];while(d<=end){o.push(iso(d));d.setDate(d.getDate()+7)}return o}
+const DAYS=sundays();
+const rTxt=r=>r[0]===START&&r[1]===END?'Toute la journée':fmt(r[0])+'–'+fmt(r[1]);
+
+// ---- Données ----
+const api={
+  abs:{},log:[],
+  get(m,d){return this.abs[m+'|'+d]||[]},
+  async load(){
+    const [a,h]=await Promise.all([
+      sb(`/absences?select=id,member,day,start_min,end_min&day=gte.${DAYS[0]}&day=lte.${DAYS[DAYS.length-1]}&order=start_min`),
+      sb('/absence_history?select=*&order=id.desc&limit=100')
+    ]);
+    const m={};for(const r of a){(m[r.member+'|'+r.day]=m[r.member+'|'+r.day]||[]).push({id:r.id,r:[r.start_min,r.end_min]})}
+    this.abs=m;this.log=h;
+  },
+  rpc(fn,body){return sb('/rpc/'+fn,{method:'POST',body:JSON.stringify(body)})}
+};
+
+// ---- État et affichage ----
+const S={tab:'saisie',member:'',open:null,ov:DAYS[0],msg:'',status:'loading',err:'',busy:false,upd:null};
+try{S.member=localStorage.getItem('membre')||''}catch(e){}
+const $=id=>document.getElementById(id);
+const opts=(a,sel,f)=>a.map(v=>`<option value="${v}"${v==sel?' selected':''}>${f?f(v):v}</option>`).join('');
+const times=(from,to)=>{const o=[];for(let t=from;t<=to;t+=STEP)o.push(t);return o};
+
+function viewSaisie(){
+  let h=`<div class="who"><label for="mb">Je suis</label><select id="mb">${opts(MEMBERS,S.member)}</select></div>`;
+  let last='';
+  for(const d of DAYS){
+    const mo=monthD(d);if(mo!==last){h+=`<h2>${mo}</h2>`;last=mo}
+    const l=api.get(S.member,d),abs=l.length>0;
+    h+=`<div class="day${abs?' abs':''}"><div class="top"><div><b>${longD(d)}</b><div class="st">${abs?'Absent : '+l.map(x=>rTxt(x.r)).join(', '):'Disponible'}</div></div>
+    <button class="btn" data-a="open" data-d="${d}">${S.open===d?'Fermer':'Modifier'}</button></div>`;
+    if(S.open===d){
+      const isFull=l.some(x=>x.r[0]===START&&x.r[1]===END),isFree=l.length===0;
+      h+=`<div class="panel"><div class="row"><button class="btn ${isFull?'p':'k'}" data-a="full" data-d="${d}">Absent toute la journée</button><button class="btn ${isFree?'g':'k'}" data-a="clear" data-d="${d}">Disponible</button></div>
+      <div class="row" style="margin-top:10px"><span>Absent de</span><select id="rs">${opts(times(START,END-STEP),660,fmt)}</select><span>à</span><select id="re">${opts(times(START+STEP,END),780,fmt)}</select><button class="btn" data-a="range" data-d="${d}">Ajouter</button></div>`;
+      if(S.msg)h+=`<p class="msg">${S.msg}</p>`;
+      if(l.length)h+=`<div class="row" style="margin-top:10px">${l.map(x=>`<span class="chip">${rTxt(x.r)}<button aria-label="Retirer" data-a="del" data-id="${x.id}">✕</button></span>`).join('')}</div>`;
+      h+=`</div>`;
+    }
+    h+=`</div>`;
+  }
+  return h;
+}
+
+function viewOverview(){
+  const slots=times(START,END-STEP),d=S.ov,i=DAYS.indexOf(d);
+  const pres=(m,t)=>!api.get(m,d).some(x=>x.r[0]<=t&&t<x.r[1]);
+  const counts=slots.map(t=>MEMBERS.filter(m=>pres(m,t)).length);
+  const full=MEMBERS.filter(m=>!api.get(m,d).length).length;
+  const nAbs=MEMBERS.length-full;
+  let h=`<div class="row"><button class="btn" data-a="prev"${i<1?' disabled':''} aria-label="Dimanche précédent">‹</button>
+  <select id="ov" style="flex:1">${opts(DAYS,d,v=>longD(v)+' – '+MEMBERS.filter(m=>api.get(m,v).length).length+' avec absence')}</select>
+  <button class="btn" data-a="next"${i>=DAYS.length-1?' disabled':''} aria-label="Dimanche suivant">›</button></div>
+  <p class="sum">${full} sur ${MEMBERS.length} présents toute la journée. ${nAbs?nAbs+' avec une absence.':'Personne n’est absent.'}</p>
+  <div class="gridwrap"><table><thead><tr><th>Membre</th>${slots.map(t=>`<th class="h">${t%60?'':Math.floor(t/60)+'h'}</th>`).join('')}</tr>
+  <tr class="cnt"><td>Présents</td>${counts.map(c=>`<td style="color:${c<MEMBERS.length*0.7?'var(--ac)':'var(--okx)'}">${c}</td>`).join('')}</tr></thead><tbody>`;
+  for(const m of MEMBERS)h+=`<tr><td>${m}</td>${slots.map(t=>`<td class="c ${pres(m,t)?'y':'n'}" title="${m} ${fmt(t)}"></td>`).join('')}</tr>`;
+  return h+`</tbody></table></div><p class="sum">Vert = présent. Rayé rose = absent. Créneaux de 30 minutes.</p>`;
+}
+
+function viewHist(){
+  if(!api.log.length)return '<p class="empty">Aucune modification pour le moment.</p>';
+  const txt=e=>e.action==='add'?'absent '+rTxt([e.start_min,e.end_min]):e.action==='remove'?'retire '+rTxt([e.start_min,e.end_min]):'disponible toute la journée';
+  return '<div class="log">'+api.log.map(e=>`<div><b>${e.member}</b> : ${txt(e)}<small>dimanche ${shortD(e.day)} · modifié le ${new Date(e.created_at).toLocaleString('fr-CH',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</small></div>`).join('')+'</div>';
+}
+
+function render(){
+  const app=$('app');app.className=S.busy?'busy':'';
+  $('upd').textContent=S.upd?'Mis à jour à '+pad(S.upd.getHours())+':'+pad(S.upd.getMinutes()):'Chargement…';
+  if(S.status==='loading'){app.innerHTML='<p class="empty">Chargement…</p>';return}
+  if(S.status==='fatal'){app.innerHTML=`<p class="msg">${S.err}</p><p><button class="btn p" data-a="retry">Réessayer</button></p>`;return}
+  const tabs=[['saisie','Mes absences'],['vue','Vue d’ensemble'],['hist','Historique']];
+  app.innerHTML=`<nav>${tabs.map(t=>`<button data-a="tab" data-t="${t[0]}" class="${S.tab===t[0]?'on':''}">${t[1]}</button>`).join('')}</nav>`+
+    (S.err?`<p class="msg">${S.err}</p>`:'')+
+    (S.tab==='saisie'?viewSaisie():S.tab==='vue'?viewOverview():viewHist());
+}
+
+async function refresh(){
+  try{await api.load();S.err='';S.upd=new Date()}catch(e){S.err=errTxt(e)}
+  render();
+}
+async function write(fn,body){
+  S.busy=true;S.msg='';render();
+  try{await api.rpc(fn,body)}catch(e){S.msg=errTxt(e)}
+  S.busy=false;await refresh();
+}
+async function init(){
+  try{
+    MEMBERS=(await sb('/members?select=name&order=position')).map(m=>m.name);
+    if(!MEMBERS.length)throw new Error('Aucun membre dans la base.');
+    if(!MEMBERS.includes(S.member))S.member=MEMBERS[0];
+    await api.load();S.status='ok';S.upd=new Date();
+  }catch(e){S.status='fatal';S.err=errTxt(e)}
+  render();
+}
+
+document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-a]');if(!b)return;
+  const a=b.dataset.a,d=b.dataset.d,m=S.member;
+  if(a==='retry'){S.status='loading';render();init();return}
+  if(a==='tab'){S.tab=b.dataset.t;render();refresh();return}
+  if(a==='open'){S.open=S.open===d?null:d;S.msg=''}
+  else if(a==='full'){write('add_absence',{p_member:m,p_day:d,p_start:START,p_end:END});return}
+  else if(a==='clear'){write('clear_absences',{p_member:m,p_day:d});return}
+  else if(a==='del'){write('remove_absence',{p_id:+b.dataset.id});return}
+  else if(a==='range'){
+    const s=+$('rs').value,en=+$('re').value;
+    if(en<=s){S.msg='L’heure de fin doit être après l’heure de début.'}
+    else{write('add_absence',{p_member:m,p_day:d,p_start:s,p_end:en});return}
+  }
+  else if(a==='prev'){S.ov=DAYS[Math.max(0,DAYS.indexOf(S.ov)-1)]}
+  else if(a==='next'){S.ov=DAYS[Math.min(DAYS.length-1,DAYS.indexOf(S.ov)+1)]}
+  render();
+});
+document.addEventListener('change',e=>{
+  if(e.target.id==='mb'){S.member=e.target.value;S.open=null;S.msg='';try{localStorage.setItem('membre',S.member)}catch(x){}render()}
+  if(e.target.id==='ov'){S.ov=e.target.value;render()}
+});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&S.status==='ok'&&!S.busy)refresh()});
+render();init();
+</script>
+</body>
+</html>
